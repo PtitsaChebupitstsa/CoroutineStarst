@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.example.coroutinestarsts.databinding.ActivityMainBinding
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.concurrent.thread
@@ -25,19 +26,25 @@ class MainActivity : AppCompatActivity() {
         binding.buttonLoad.setOnClickListener {
             binding.progress.isVisible = true
             binding.buttonLoad.isEnabled = false
-          val jobCity=  lifecycleScope.launch {
+            val deferredCity = lifecycleScope.async {
                 val city = loadCity()
                 binding.tvLocation.text = city
+                city
             }
-            val jobTemp =lifecycleScope.launch {
+            val deferredTemp = lifecycleScope.async {
                 val temp = loadTemperature()
                 binding.tvTemperature.text = temp.toString()
+                temp
             }
             lifecycleScope.launch {
-                jobCity.join()
-                jobTemp.join()
+                val city = deferredCity.await()
+                val temp = deferredTemp.await()
+                Toast.makeText(this@MainActivity, "City $city Temp $temp", Toast.LENGTH_SHORT)
+                    .show()
                 binding.progress.isVisible = false
                 binding.buttonLoad.isEnabled = true
+
+
             }
 
 //            loadWithoutCoroutine()
@@ -69,6 +76,7 @@ class MainActivity : AppCompatActivity() {
                     loadWithoutCoroutine(1, it)
                 }
             }
+
             1 -> {
                 val city = obj as String
                 binding.tvLocation.text = city
@@ -76,6 +84,7 @@ class MainActivity : AppCompatActivity() {
                     loadWithoutCoroutine(2, it)
                 }
             }
+
             2 -> {
                 val temp = obj as Int
                 binding.tvTemperature.text = temp.toString()
