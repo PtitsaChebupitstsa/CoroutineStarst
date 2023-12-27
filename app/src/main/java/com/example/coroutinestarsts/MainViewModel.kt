@@ -6,6 +6,8 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -13,7 +15,7 @@ import java.lang.RuntimeException
 import kotlin.concurrent.thread
 
 class MainViewModel : ViewModel() {
-    private val parentJob = Job()
+    private val parentJob = SupervisorJob()
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         Log.d(LOG_TAG,"Ошибка в  $throwable")  }
     private val coroutineScope = CoroutineScope(Dispatchers.Main + parentJob + exceptionHandler)
@@ -27,10 +29,13 @@ class MainViewModel : ViewModel() {
             delay(2000)
             Log.d(LOG_TAG, "Вторая корутина закончила работу")
         }
-        val childJob3= coroutineScope.launch {
+        val childJob3= coroutineScope.async {
             delay(1000)
                 error()
             Log.d(LOG_TAG, "Вторая корутина закончила работу")
+        }
+        coroutineScope.launch {
+            childJob3.await()
         }
     }
     private fun error(){
