@@ -2,17 +2,21 @@ package com.example.coroutinestarsts
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.lang.RuntimeException
 import kotlin.concurrent.thread
 
 class MainViewModel : ViewModel() {
     private val parentJob = Job()
-    private val coroutineScope = CoroutineScope(Dispatchers.Main + parentJob)
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Log.d(LOG_TAG,"Ошибка в  $throwable")  }
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + parentJob + exceptionHandler)
     fun method() {
        val childJob1= coroutineScope.launch {
             delay(3000)
@@ -23,13 +27,14 @@ class MainViewModel : ViewModel() {
             delay(2000)
             Log.d(LOG_TAG, "Вторая корутина закончила работу")
         }
-        thread {
-            Thread.sleep(1000)
-            parentJob.cancel()
-            Log.d(LOG_TAG,"активна ли родительская Job ${parentJob.isActive}")
+        val childJob3= coroutineScope.launch {
+            delay(1000)
+                error()
+            Log.d(LOG_TAG, "Вторая корутина закончила работу")
         }
-        Log.d(LOG_TAG,parentJob.children.contains(childJob1).toString())
-        Log.d(LOG_TAG,parentJob.children.contains(childJob2).toString())
+    }
+    private fun error(){
+        throw RuntimeException()
     }
 
     override fun onCleared() {
